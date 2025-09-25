@@ -18,8 +18,17 @@
     .brand{display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px}
     .brand .logo-wrap{position:relative; width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#fff,#777); box-shadow:0 0 0 1px #222, var(--shadow); overflow:hidden}
     /* 사용자 제공 로고를 index.html과 같은 경로에 logo_superpush.png로 두면 아래가 로드됩니다 */
-.brand img.logo-img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; filter:grayscale(1) contrast(1.05); mix-blend-mode:multiply}
-
+.brand img.logo-img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  /* ↓↓↓ blend/필터 모두 제거 (흰색 로고가 섞이지 않게) */
+  filter:none;
+  mix-blend-mode:normal;
+}
 /* ‘슈퍼푸시’ 줄바꿈 방지 */
 .brand-ko {
   white-space: nowrap;
@@ -118,7 +127,7 @@ nav{margin-top:28px; display:grid; gap:8px}
 <div class="brand">
   <div class="logo-wrap">
 <img id="brandLogo" class="logo-img" alt="SuperPush Logo"
-     src="./logo_superpush.png" />
+     src="logo_superpush.png" />
   </div>
   <span class="brand-ko">슈퍼푸시</span>
   <span class="muted">SuperPush CRM</span>
@@ -454,6 +463,15 @@ nav{margin-top:28px; display:grid; gap:8px}
 
   <script>
     // ===== UTIL =====
+    // 로고 로드되면 wrap 배경 감추기 (선택)
+(function(){
+  var img = document.getElementById('brandLogo');
+  if(!img) return;
+  img.addEventListener('load', function(){
+    var wrap = img.parentElement;
+    if(wrap) wrap.style.background = 'transparent';
+  });
+})();
     function fmt(n){ return new Intl.NumberFormat('ko-KR').format(n); }
     function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
     function el(id){ return document.getElementById(id); }

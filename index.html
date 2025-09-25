@@ -18,7 +18,7 @@
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0; background:linear-gradient(180deg,#000,#0a0a0a 35%); color:var(--text); font:14px/1.5 "Pretendard","Inter","Segoe UI",system-ui,-apple-system,sans-serif}
-    .app{display:grid; grid-template-columns:260px 1fr; height:100%;}
+    .app{display:grid; grid-template-columns:260px 1fr; height:100%}
     aside{background:var(--panel); padding:24px 16px; border-right:1px solid var(--line)}
     .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
     .logo{width:36px; height:36px; border-radius:12px; background:linear-gradient(135deg,#fff,#777); box-shadow:0 0 0 1px #222, var(--shadow)}
@@ -72,7 +72,7 @@
     .dialog .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:12px}
     .field{display:grid; gap:6px; margin:10px 0}
     .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-    select, .dialog input, textarea{border:1px solid #222; background:#0c0c0c; color:var(--text); border-radius:10px; padding:10px 12px; width:100%}
+    select, .dialog input, textarea{border:1px solid #222; background:#0c0c0c; color:#fff; border-radius:10px; padding:10px 12px; width:100%}
     .close{position:absolute; inset:0}
     .close span{position:absolute; top:18px; right:24px; background:#121212; border:1px solid #222; padding:6px 10px; border-radius:10px}
 
@@ -115,6 +115,22 @@
       </header>
 
       <main>
+        <!-- CSV UPLOAD + STATUS -->
+        <div class="card" id="uploadCard">
+          <div class="panel-title">
+            <h3 style="font-size:16px; color:#e2e2e2; margin:0">데이터 업로드 · CSV(users/events/orders)</h3>
+            <div class="toolbar">
+              <input id="csvInput" type="file" accept=".csv" multiple class="btn"/>
+              <button class="btn" id="loadDemo">데모 데이터 채우기</button>
+            </div>
+          </div>
+          <div class="controls" id="loadStatus" style="grid-template-columns:repeat(3,1fr)">
+            <div class="field"><label>users.csv</label><input id="status_users" value="미로드" disabled></div>
+            <div class="field"><label>events.csv</label><input id="status_events" value="미로드" disabled></div>
+            <div class="field"><label>orders.csv</label><input id="status_orders" value="선택(옵션)" disabled></div>
+          </div>
+        </div>
+
         <!-- LIVE CONTROLS -->
         <div class="card">
           <div class="panel-title">
@@ -158,7 +174,7 @@
           </div>
         </div>
 
-        <!-- KPI CARDS -->
+        <!-- KPI CARDS (live) -->
         <div class="grid kpis" id="kpiGrid">
           <div class="card kpi" data-kpi="mau">
             <div>
@@ -287,6 +303,22 @@
             </div>
           </div>
         </div>
+      
+        <!-- AI RECOMMENDATIONS PANEL -->
+        <div class="card" id="aiPanel" style="margin-top:16px">
+          <div class="panel-title">
+            <h3 style="font-size:16px; color:#e2e2e2; margin:0">캠페인 추천 · 울트라캡쑝푸시 AI</h3>
+            <div class="toolbar">
+              <input id="openaiKey" type="password" placeholder="OpenAI API Key (선택)" style="min-width:280px"/>
+              <button class="btn" id="genRec">추천 생성</button>
+              <button class="btn ghost" id="copyPrompt">프롬프트 복사</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field"><label>요약</label><textarea id="summaryText" rows="5" placeholder="업로드한 데이터에서 KPI/퍼널/세그먼트 요약이 표시됩니다."></textarea></div>
+            <div class="field"><label>추천 결과</label><textarea id="recText" rows="5" placeholder="추천 캠페인과 레퍼런스가 생성됩니다."></textarea></div>
+          </div>
+        </div>
       </main>
     </section>
   </div>
@@ -352,6 +384,7 @@
   </div>
 
   <script>
+    // ===== UTIL =====
     const fmt = (n)=> new Intl.NumberFormat('ko-KR').format(n);
     const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
     const el = (id)=>document.getElementById(id);
@@ -453,6 +486,194 @@
     });
 
     refresh();
+  
+    // ===== CSV LOADING & PARSING =====
+    const state = { users: [], events: [], orders: [] };
+
+    function parseCSV(text){
+      const rows=[]; let i=0, field='', row=[], inQ=false; 
+      while(i<text.length){
+        const c=text[i]; const n=text[i+1];
+        if(c==='"'){
+          if(inQ && n==='"'){ field+='"'; i++; }
+          else inQ=!inQ;
+        } else if(c===',' && !inQ){ row.push(field); field=''; }
+        else if((c==='\n' || c==='\r') && !inQ){ if(field!==''||row.length){ row.push(field); rows.push(row); field=''; row=[] } }
+        else { field+=c }
+        i++
+      }
+      if(field!==''||row.length){ row.push(field); rows.push(row) }
+      const header = rows.shift().map(h=>h.trim());
+      return rows.filter(r=>r.length && r.some(x=>x!==''))
+                 .map(r=>Object.fromEntries(header.map((h,idx)=>[h, (r[idx]||'').trim()])));
+    }
+
+    function detectType(obj){
+      const keys = Object.keys(obj||{}).map(k=>k.toLowerCase());
+      if(keys.includes('event_name') && keys.includes('event_time')) return 'events';
+      if(keys.includes('order_id') && keys.includes('amount')) return 'orders';
+      if(keys.includes('user_id') && (keys.includes('email')||keys.includes('signup_date'))) return 'users';
+      return 'unknown';
+    }
+
+    function loadFiles(fileList){
+      if(!fileList || !fileList.length) return;
+      const promises = [...fileList].map(f=>f.text().then(t=>({name:f.name,data:parseCSV(t)})));
+      Promise.all(promises).then(all=>{
+        all.forEach(({name,data})=>{
+          const t = detectType(data[0]);
+          if(state[t]){ state[t]=data; }
+        });
+        el('status_users').value = state.users.length? `로우 ${state.users.length}` : '미로드';
+        el('status_events').value = state.events.length? `로우 ${state.events.length}` : '미로드';
+        el('status_orders').value = state.orders.length? `로우 ${state.orders.length}` : '선택(옵션)';
+        recomputeFromData();
+      });
+    }
+
+    el('csvInput').addEventListener('change', (e)=> loadFiles(e.target.files));
+
+    // ===== DEMO DATA (SMALL RANDOM) =====
+    el('loadDemo').addEventListener('click', ()=>{
+      const today = new Date();
+      const fmtD = d=> d.toISOString().slice(0,19).replace('T',' ');
+      state.users = Array.from({length:100},(_,i)=>({
+        user_id:'U'+(10000+i), email:`u${i}@demo.com`, signup_date: fmtD(new Date(today- Math.random()*90*864e5)), region:['Seoul','Busan','Incheon'][i%3]
+      }));
+      state.events = [];
+      state.users.forEach(u=>{
+        const signup = new Date(u.signup_date);
+        state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'signup', event_time: u.signup_date});
+        if(Math.random()<0.7){
+          const t = new Date(+signup+ (1+Math.random()*10)*36e5);
+          state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'add_to_cart', event_time: fmtD(t)});
+        }
+        if(Math.random()<0.4){
+          const t = new Date(+signup+ (4+Math.random()*48)*36e5);
+          state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'purchase', event_time: fmtD(t)});
+        }
+      });
+      state.orders = state.events.filter(e=>e.event_name==='purchase').map((e,i)=>({
+        order_id:'O'+(30000+i), user_id:e.user_id, order_time:e.event_time, amount: (Math.floor(Math.random()*9)+1)*10000, status:'success'
+      }));
+      el('status_users').value = `로우 ${state.users.length}`;
+      el('status_events').value = `로우 ${state.events.length}`;
+      el('status_orders').value = `로우 ${state.orders.length}`;
+      recomputeFromData();
+    });
+
+    // ===== AGGREGATION =====
+    function withinDays(ts, days){
+      const t = new Date((ts||'').replace('T',' '));
+      if(isNaN(+t)) return false;
+      return (Date.now() - t.getTime()) <= days*864e5;
+    }
+
+    function recomputeFromData(){
+      if(!state.events.length && !state.users.length) return;
+      const last30Users = new Set(state.events.filter(e=> withinDays(e.event_time||e.ts||e.time||e.event_ts||'', 30)).map(e=>e.user_id));
+      const signups = state.events.filter(e=> (e.event_name||'').toLowerCase()==='signup');
+      const last30Signups = new Set(signups.filter(e=> withinDays(e.event_time,30)).map(e=>e.user_id));
+      const carts = state.events.filter(e=> (e.event_name||'').toLowerCase()==='add_to_cart');
+      const pays = state.events.filter(e=> (e.event_name||'').toLowerCase()==='purchase');
+
+      inputs.mau.value = last30Users.size;
+      inputs.signup.value = last30Signups.size;
+      const baseUsers = last30Users.size || state.users.length || 1;
+      const buyers = new Set(pays.map(e=>e.user_id)).size;
+      inputs.cr.value = (buyers / baseUsers * 100).toFixed(1);
+      inputs.open.value = Math.max(10, Math.min(60, (buyers/baseUsers*100)*12)).toFixed(1);
+
+      const cartUsers = new Set(carts.map(e=>e.user_id));
+      const payUsers = new Set(pays.map(e=>e.user_id));
+      inputs.toCart.value = Math.round(cartUsers.size / (state.users.length||1) * 100);
+      inputs.toPay.value = Math.round(payUsers.size / (state.users.length||1) * 100);
+
+      refresh();
+      buildSummary();
+    }
+
+    function buildSummary(){
+      const totals = {};
+      state.orders.forEach(o=> totals[o.user_id]=(totals[o.user_id]||0)+(+o.amount||0));
+      const arr = Object.values(totals).sort((a,b)=>b-a);
+      const idx = Math.max(0, Math.floor(arr.length*0.2)-1);
+      const vipCut = arr[idx]||0;
+      const dormant30 = state.users.filter(u=> !state.events.some(e=> e.user_id===u.user_id && withinDays(e.event_time,30))).length;
+      const s = [
+        `MAU: ${kpis.mau.textContent}`,
+        `신규가입: ${kpis.signup.textContent}`,
+        `구매 전환율: ${kpis.cr.textContent}`,
+        `오픈율: ${kpis.open.textContent}`,
+        `장바구니 도달율: ${inputs.toCart.value}%`,
+        `결제 도달율: ${inputs.toPay.value}%`,
+        `VIP 컷(상위20% 1인 누적액 기준): ${vipCut.toLocaleString()}원`,
+        `휴면(30일 무활동): ${dormant30}명`
+      ].join('\n');
+      el('summaryText').value = s;
+    }
+
+    // ===== AI RECOMMENDATIONS =====
+    function heuristicRecommend(){
+      const cr = parseFloat(inputs.cr.value)||0;
+      const toCart = parseFloat(inputs.toCart.value)||0;
+      const toPay = parseFloat(inputs.toPay.value)||0;
+      const recs=[];
+      if(toCart<50) recs.push('장바구니 도달 향상: 상품 상세 CTA 강화 + 1시간 리마인드 메일. 세그먼트: 최근 7일 방문·미장바구니.');
+      if(toPay<30) recs.push('결제 전환 보완: 장바구니 24시간 이탈 타깃 쿠폰 A/B(5% vs 무료배송). 세그먼트: 장바구니 담고 24h 미구매.');
+      if(cr<3) recs.push('퍼널 상단 볼륨 확대: 웰컴 시리즈(3부작)로 첫 구매 유도. 첫 구매 가이드 + 베스트 3 리스트.');
+      if(!recs.length) recs.push('VIP 유지: 상위 20% 전용 얼리액세스 + 후기 리워드.');
+      const refs = [
+        'https://www.braze.com/resources',
+        'https://www.segment.com/academy',
+        'https://www.retentionscience.com/blog'
+      ];
+      return `● 추천 캠페인\n- ${recs.join('\n- ')}\n\n● 참고 자료\n- ${refs.join('\n- ')}`;
+    }
+
+    el('genRec').addEventListener('click', async ()=>{
+      const key = el('openaiKey').value.trim();
+      const prompt = `다음 KPI/퍼널 요약을 바탕으로 이커머스 CRM 캠페인을 제안하세요.\n${el('summaryText').value}\n형식: 1) 캠페인명/목적/타깃/메시지 예시/빈도 2) A/B 실험안 3) KPI 4) 참고 링크(3개, 전체 URL).`;
+      el('recText').value = '생성중...';
+      if(!key){ el('recText').value = heuristicRecommend(); return; }
+      try{
+        const res = await fetch('https://api.openai.com/v1/chat/completions',{
+          method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+          body: JSON.stringify({ model:'gpt-4o-mini', messages:[{role:'system',content:'당신은 CRM 마케터입니다.'},{role:'user',content:prompt}], temperature:0.7 })
+        });
+        const j = await res.json();
+        const text = j.choices?.[0]?.message?.content || heuristicRecommend();
+        el('recText').value = text;
+      }catch(e){ el('recText').value = heuristicRecommend(); }
+    });
+
+    el('copyPrompt').addEventListener('click', ()=>{
+      const prompt = `KPI/퍼널 요약\n${el('summaryText').value}\n요청 포맷: 1) 캠페인명/목적/타깃/메시지 예시/빈도 2) A/B 실험안 3) KPI 4) 참고 링크(3개, 전체 URL)`;
+      navigator.clipboard.writeText(prompt);
+    });
+
+    // ===== SELF TESTS (console) =====
+    ;(()=>{
+      try{
+        console.group('%c울트라캡쑝푸시 · Self Tests','color:#fff;background:#000;padding:2px 6px;border-radius:4px');
+        // parseCSV basic
+        const csv = 'user_id,email\nU1,a@test.com\nU2,b@test.com';
+        const data = parseCSV(csv);
+        console.assert(Array.isArray(data) && data.length===2 && data[0].user_id==='U1', 'parseCSV 기본 실패');
+        // parseCSV quotes
+        const csv2 = 'name,comment\n"kim","hello, world"\n"lee","multi\nline"';
+        const data2 = parseCSV(csv2);
+        console.assert(data2.length===2 && data2[0].comment==='hello, world', 'parseCSV 인용부호 실패');
+        // detectType
+        console.assert(detectType({event_name:'signup',event_time:'2025-01-01'})==='events', 'detectType events 실패');
+        console.assert(detectType({user_id:'U1',email:'a'})==='users', 'detectType users 실패');
+        // newline join
+        console.assert(['a','b'].join('\n')==='a\nb', 'newline join 실패');
+        console.groupEnd();
+      }catch(err){
+        console.error('Self Test Error:', err);
+      }
+    })();
   </script>
 </body>
 </html>

@@ -111,12 +111,15 @@
 <body>
   <div class="app">
     <aside>
-      <div class="brand">
-        <div class="logo-wrap">
-          <img class="logo-img" alt="SuperPush Logo" src="./logo_superpush.png"/>
-        </div>
-        슈퍼푸시 <span class="muted">SuperPush CRM</span>
-      </div>
+<div class="brand">
+  <div class="logo-wrap">
+    <img id="brandLogo" class="logo-img" alt="SuperPush Logo"
+         src="./logo_superpush.png"
+         onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#fff,#777)';"/>
+  </div>
+  <span class="brand-ko">슈퍼푸시</span>
+  <span class="muted">SuperPush CRM</span>
+</div>
       <nav>
         <a class="nav-btn active" href="#">대시보드</a>
         <a class="nav-btn" href="#segments">세그먼트</a>
@@ -809,3 +812,5 @@
   </script>
 </body>
 </html>
+.brand-ko { white-space: nowrap; }       /* ‘슈퍼푸시’ 줄바꿈 방지 */
+.brand img.logo-img { object-fit: contain; image-rendering: auto; }

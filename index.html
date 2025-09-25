@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>울트라캡쑝푸시 · UltraCapssoong Push</title>
+  <style>
+    :root{
+      /* Monochrome Theme */
+      --bg:#0a0a0a; 
+      --panel:#111; 
+      --muted:#999; 
+      --text:#f5f5f5; 
+      --line:#1f1f1f;
+      --card:#0e0e0e;
+      --radius:16px; --gap:16px; --shadow:0 12px 30px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; background:linear-gradient(180deg,#000,#0a0a0a 35%); color:var(--text); font:14px/1.5 "Pretendard","Inter","Segoe UI",system-ui,-apple-system,sans-serif}
+    .app{display:grid; grid-template-columns:260px 1fr; height:100%;}
+    aside{background:var(--panel); padding:24px 16px; border-right:1px solid var(--line)}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+    .logo{width:36px; height:36px; border-radius:12px; background:linear-gradient(135deg,#fff,#777); box-shadow:0 0 0 1px #222, var(--shadow)}
+    .muted{color:var(--muted)}
+    nav{margin-top:28px; display:grid; gap:8px}
+    .nav-btn{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#e6e6e6; text-decoration:none; transition:.2s background}
+    .nav-btn:hover,.nav-btn.active{background:#1a1a1a}
+
+    header{display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#0a0a0acc; backdrop-filter: blur(6px)}
+    input[type="search"]{flex:1; border:1px solid #222; background:#0c0c0c; color:var(--text); border-radius:12px; padding:10px 12px}
+    .btn{border:1px solid #222; background:#121212; color:var(--text); padding:10px 12px; border-radius:10px; cursor:pointer; text-decoration:none; user-select:none}
+    .btn.primary{background:#fff; color:#000; font-weight:700; border-color:#fff}
+    .btn.ghost{background:transparent}
+    .btn.toggled{background:#e6e6e6; color:#000}
+
+    main{padding:20px; overflow:auto}
+    .grid{display:grid; gap:var(--gap)}
+    .kpis{grid-template-columns:repeat(4, minmax(180px,1fr))}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow)}
+    .card h3{margin:0 0 8px; font-size:13px; color:#d7d7d7; font-weight:700}
+    .kpi{display:flex; align-items:flex-end; justify-content:space-between; transition:.15s transform, .15s box-shadow}
+    .kpi:hover{transform:translateY(-2px); box-shadow:0 16px 40px rgba(0,0,0,.5)}
+    .kpi.active{outline:2px solid #fff; outline-offset:2px}
+    .value{font-size:28px; font-weight:800}
+    .delta{font:12px/1.2 ui-monospace,Menlo,monospace; padding:2px 8px; border-radius:999px; background:#171717; color:#cfcfcf}
+
+    .panel-title{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+
+    .funnel-steps{display:grid; grid-template-columns:180px 1fr 120px; gap:12px; align-items:center}
+    .step-label{color:#d7d7d7}
+    .bar{height:14px; background:#151515; border-radius:999px; position:relative; overflow:hidden}
+    .bar > i{position:absolute; inset:0; background:linear-gradient(90deg,#fff,#7a7a7a); width:var(--w,100%)}
+    .conv{font:12px ui-monospace; text-align:right; color:#d7d7d7}
+
+    table{width:100%; border-collapse:collapse}
+    th,td{padding:10px 8px; border-bottom:1px dashed #1e1e1e}
+    th{color:#c9c9c9; text-align:left; font-weight:700}
+    tr:hover td{background:#0f0f0f}
+    .row-select{cursor:pointer}
+    .row-select.selected td{background:#1a1a1a}
+
+    .badge{display:inline-block; padding:4px 8px; border-radius:999px; font:12px/1.1 ui-monospace; background:#171717; color:#cdcdcd}
+
+    .toolbar{display:flex; gap:8px}
+
+    /* Dialog */
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; padding:20px}
+    .modal:target{display:flex}
+    .dialog{width:min(760px,95vw); background:#0b0b0b; border:1px solid #1f1f1f; border-radius:18px; padding:18px; box-shadow:var(--shadow)}
+    .dialog h2{margin:0 0 10px}
+    .dialog .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:12px}
+    .field{display:grid; gap:6px; margin:10px 0}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    select, .dialog input, textarea{border:1px solid #222; background:#0c0c0c; color:var(--text); border-radius:10px; padding:10px 12px; width:100%}
+    .close{position:absolute; inset:0}
+    .close span{position:absolute; top:18px; right:24px; background:#121212; border:1px solid #222; padding:6px 10px; border-radius:10px}
+
+    /* Controls panel */
+    .controls{display:grid; grid-template-columns:repeat(6, minmax(120px,1fr)); gap:8px}
+    .controls .field small{color:#9b9b9b}
+
+    /* Responsive */
+    @media (max-width: 1100px){
+      .kpis{grid-template-columns:repeat(2,1fr)}
+      .funnel-steps{grid-template-columns:130px 1fr 100px}
+      .controls{grid-template-columns:repeat(3, minmax(120px,1fr))}
+    }
+    @media (max-width: 720px){
+      .app{grid-template-columns:1fr}
+      aside{position:sticky; top:0; z-index:1}
+      .kpis{grid-template-columns:1fr}
+      .controls{grid-template-columns:repeat(2, minmax(120px,1fr))}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand"><div class="logo"></div> 울트라캡쑝푸시 <span class="muted">UltraCapssoong Push</span></div>
+      <nav>
+        <a class="nav-btn active" href="#">대시보드</a>
+        <a class="nav-btn" href="#segments">세그먼트</a>
+        <a class="nav-btn" href="#funnels">퍼널</a>
+        <a class="nav-btn" href="#campaigns">캠페인</a>
+      </nav>
+    </aside>
+
+    <section style="display:flex; flex-direction:column; min-width:0">
+      <header>
+        <input type="search" placeholder="고객·세그먼트·캠페인 검색" />
+        <button class="btn ghost" id="invertBtn" title="Invert">Invert</button>
+        <a class="btn" href="#new-seg">새 세그먼트</a>
+        <a class="btn primary" href="#export">세그먼트 Export</a>
+      </header>
+
+      <main>
+        <!-- LIVE CONTROLS -->
+        <div class="card">
+          <div class="panel-title">
+            <h3 style="font-size:16px; color:#e2e2e2; margin:0">컨트롤 · 값 입력 시 아래 KPI/퍼널이 즉시 반영</h3>
+            <div class="toolbar">
+              <button class="btn" id="pulseToggle">Pulse</button>
+              <button class="btn" id="bwToggle">B/W</button>
+            </div>
+          </div>
+          <div class="controls">
+            <div class="field">
+              <label>MAU</label>
+              <input type="number" id="mau" value="42318" min="0" />
+              <small>월간 활성 사용자</small>
+            </div>
+            <div class="field">
+              <label>신규 가입</label>
+              <input type="number" id="signup" value="3902" min="0" />
+              <small>최근 30일</small>
+            </div>
+            <div class="field">
+              <label>구매 전환율(%)</label>
+              <input type="number" id="cr" value="2.7" step="0.1" min="0" max="100" />
+              <small>사이트 전환율</small>
+            </div>
+            <div class="field">
+              <label>오픈율(%)</label>
+              <input type="number" id="open" value="28.9" step="0.1" min="0" max="100" />
+              <small>이메일</small>
+            </div>
+            <div class="field">
+              <label>장바구니 도달율(%)</label>
+              <input type="number" id="toCart" value="56" step="1" min="0" max="100" />
+              <small>가입 → 장바구니</small>
+            </div>
+            <div class="field">
+              <label>결제 도달율(%)</label>
+              <input type="number" id="toPay" value="27" step="1" min="0" max="100" />
+              <small>가입 → 결제</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI CARDS -->
+        <div class="grid kpis" id="kpiGrid">
+          <div class="card kpi" data-kpi="mau">
+            <div>
+              <h3>월간 활성 사용자(MAU)</h3>
+              <div class="value" id="kpi_mau">42,318</div>
+            </div>
+            <span class="delta" id="delta_mau">+8.1%</span>
+          </div>
+          <div class="card kpi" data-kpi="signup">
+            <div>
+              <h3>신규 가입</h3>
+              <div class="value" id="kpi_signup">3,902</div>
+            </div>
+            <span class="delta" id="delta_signup">+3.4%</span>
+          </div>
+          <div class="card kpi" data-kpi="cr">
+            <div>
+              <h3>구매 전환율</h3>
+              <div class="value" id="kpi_cr">2.7%</div>
+            </div>
+            <span class="delta" id="delta_cr">-0.3%</span>
+          </div>
+          <div class="card kpi" data-kpi="open">
+            <div>
+              <h3>이메일 오픈율</h3>
+              <div class="value" id="kpi_open">28.9%</div>
+            </div>
+            <span class="delta" id="delta_open">+1.2%</span>
+          </div>
+        </div>
+
+        <!-- FUNNEL -->
+        <div id="funnels" class="card" style="margin-top:16px">
+          <div class="panel-title">
+            <h3 style="font-size:16px; color:#e2e2e2; margin:0">퍼널 · 가입 → 장바구니 → 결제</h3>
+            <div class="toolbar">
+              <button class="btn" id="segAll" data-sel>전체</button>
+              <button class="btn" id="segVip">VIP</button>
+              <button class="btn" id="segDormant">휴면</button>
+            </div>
+          </div>
+          <div class="grid" style="gap:12px">
+            <div class="funnel-steps">
+              <div class="step-label">가입</div>
+              <div class="bar" style="--w: 100%"><i></i></div>
+              <div class="conv" id="fv_signup">42,318</div>
+            </div>
+            <div class="funnel-steps">
+              <div class="step-label">장바구니</div>
+              <div class="bar"><i id="bar_cart" style="width:56%"></i></div>
+              <div class="conv" id="fv_cart">23,699 <span class="muted" id="pct_cart">(56.0%)</span></div>
+            </div>
+            <div class="funnel-steps">
+              <div class="step-label">결제</div>
+              <div class="bar"><i id="bar_pay" style="width:27%"></i></div>
+              <div class="conv" id="fv_pay">11,427 <span class="muted" id="pct_pay">(27.0%)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEGMENTS TABLE -->
+        <div id="segments" class="card" style="margin-top:16px">
+          <div class="panel-title">
+            <h3 style="font-size:16px; color:#e2e2e2; margin:0">세그먼트</h3>
+            <div class="toolbar">
+              <a class="btn" href="#new-seg">세그먼트 생성</a>
+            </div>
+          </div>
+          <table id="segTable">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>규칙</th>
+                <th>크기</th>
+                <th>상태</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-select">
+                <td>장바구니 이탈 (14일)</td>
+                <td>added_to_cart · 구매없음 · 최근 14일</td>
+                <td>8,532</td>
+                <td><span class="badge">우선 리마케팅</span></td>
+                <td style="text-align:right"><a class="btn" href="#export">Export</a></td>
+              </tr>
+              <tr class="row-select">
+                <td>VIP (상위 20%)</td>
+                <td>누적 구매액 상위 20%</td>
+                <td>1,204</td>
+                <td><span class="badge">충성 고객</span></td>
+                <td style="text-align:right"><a class="btn" href="#export">Export</a></td>
+              </tr>
+              <tr class="row-select">
+                <td>휴면 (30/60/90일)</td>
+                <td>최근 방문/구매 없음</td>
+                <td>5,911</td>
+                <td><span class="badge">리인게이지</span></td>
+                <td style="text-align:right"><a class="btn" href="#export">Export</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- CAMPAIGNS -->
+        <div id="campaigns" class="card" style="margin-top:16px">
+          <div class="panel-title">
+            <h3 style="font-size:16px; color:#e2e2e2; margin:0">캠페인</h3>
+            <div class="toolbar">
+              <button class="btn" id="newCamp">새 캠페인</button>
+              <button class="btn" id="expPerf">성과 내보내기</button>
+            </div>
+          </div>
+          <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:12px">
+            <div class="card kpi" data-campaign-card>
+              <h3>웰컴 시리즈</h3>
+              <p class="muted">3-step 이메일 · 오픈율 <b id="c1open">38%</b></p>
+            </div>
+            <div class="card kpi" data-campaign-card>
+              <h3>이탈 방지</h3>
+              <p class="muted">장바구니 이탈 타겟 · CTR <b id="c2ctr">6.2%</b></p>
+            </div>
+            <div class="card kpi" data-campaign-card>
+              <h3>휴면 리인게이지</h3>
+              <p class="muted">90일 휴면 대상 · 반응 <b id="c3resp">4.1%</b></p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <!-- New Segment Modal -->
+  <div id="new-seg" class="modal">
+    <a class="close" href="#"><span>닫기</span></a>
+    <div class="dialog">
+      <h2>세그먼트 생성</h2>
+      <div class="row">
+        <div class="field">
+          <label>세그먼트 이름</label>
+          <input placeholder="예: 장바구니 이탈 14일" />
+        </div>
+        <div class="field">
+          <label>기간 윈도우</label>
+          <select>
+            <option>7일</option>
+            <option selected>14일</option>
+            <option>30일</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>규칙</label>
+        <textarea rows="4" placeholder="예: added_to_cart AND NOT purchased"></textarea>
+      </div>
+      <div class="actions">
+        <a class="btn" href="#">취소</a>
+        <a class="btn primary" href="#">저장</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div id="export" class="modal">
+    <a class="close" href="#"><span>닫기</span></a>
+    <div class="dialog">
+      <h2>세그먼트 Export</h2>
+      <div class="row">
+        <div class="field">
+          <label>대상 세그먼트</label>
+          <select>
+            <option>장바구니 이탈 (14일)</option>
+            <option>VIP (상위 20%)</option>
+            <option>휴면 (30/60/90일)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>채널</label>
+          <select>
+            <option>CSV 다운로드</option>
+            <option>Sendgrid (API)</option>
+            <option>Braze (API)</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="#">취소</a>
+        <a class="btn primary" href="#">실행</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fmt = (n)=> new Intl.NumberFormat('ko-KR').format(n);
+    const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+    const el = (id)=>document.getElementById(id);
+
+    const inputs = { mau: el('mau'), signup: el('signup'), cr: el('cr'), open: el('open'), toCart: el('toCart'), toPay: el('toPay') };
+    const kpis = { mau: el('kpi_mau'), signup: el('kpi_signup'), cr: el('kpi_cr'), open: el('kpi_open') };
+
+    const bars = { cart: el('bar_cart'), pay: el('bar_pay') };
+    const funnelVals = { signup: el('fv_signup'), cart: el('fv_cart'), pay: el('fv_pay') };
+    const funnelPct = { cart: el('pct_cart'), pay: el('pct_pay') };
+
+    function refresh(){
+      kpis.mau.textContent = fmt(clamp(+inputs.mau.value||0,0,1e9));
+      kpis.signup.textContent = fmt(clamp(+inputs.signup.value||0,0,1e8));
+      kpis.cr.textContent = clamp(+inputs.cr.value||0,0,100).toFixed(1) + '%';
+      kpis.open.textContent = clamp(+inputs.open.value||0,0,100).toFixed(1) + '%';
+
+      const base = clamp(+inputs.mau.value||0,0,1e9);
+      const cartRate = clamp(+inputs.toCart.value||0,0,100);
+      const payRate = clamp(+inputs.toPay.value||0,0,100);
+      const cart = Math.round(base * cartRate/100);
+      const pay = Math.round(base * payRate/100);
+
+      bars.cart.style.width = cartRate + '%';
+      bars.pay.style.width = payRate + '%';
+
+      funnelVals.signup.textContent = fmt(base);
+      funnelVals.cart.innerHTML = fmt(cart) + ' <span class="muted">(' + cartRate.toFixed(1) + '%)</span>';
+      funnelVals.pay.innerHTML = fmt(pay) + ' <span class="muted">(' + payRate.toFixed(1) + '%)</span>';
+
+      funnelPct.cart.textContent = '('+cartRate.toFixed(1)+'%)';
+      funnelPct.pay.textContent = '('+payRate.toFixed(1)+'%)';
+
+      el('c1open').textContent = (Math.max(10, Math.min(90, +inputs.open.value || 0))).toFixed(1) + '%';
+      el('c2ctr').textContent = (Math.max(1, Math.min(20, (+inputs.cr.value||0)/2))).toFixed(1) + '%';
+      el('c3resp').textContent = (Math.max(1, Math.min(10, (+inputs.toPay.value||0)/6))).toFixed(1) + '%';
+    }
+
+    Object.values(inputs).forEach(i=> i.addEventListener('input', refresh));
+
+    document.getElementById('kpiGrid').addEventListener('click', (e)=>{
+      const card = e.target.closest('.kpi');
+      if(!card) return;
+      document.querySelectorAll('.kpi').forEach(k=>k.classList.remove('active'));
+      card.classList.add('active');
+    });
+
+    document.getElementById('segTable').addEventListener('click', (e)=>{
+      const row = e.target.closest('.row-select');
+      if(!row) return;
+      row.classList.toggle('selected');
+    });
+
+    function toggleSel(btn){
+      document.querySelectorAll('[data-sel], #segVip, #segDormant, #segAll').forEach(b=>b.removeAttribute('data-sel'));
+      btn.setAttribute('data-sel','');
+      btn.classList.add('toggled');
+      ['segVip','segDormant','segAll'].forEach(id=>{ if(id!==btn.id) document.getElementById(id).classList.remove('toggled') });
+    }
+    ['segAll','segVip','segDormant'].forEach(id=>{
+      const b = el(id);
+      b.addEventListener('click',()=>{
+        toggleSel(b);
+        document.querySelectorAll('.bar > i').forEach(i=>{ i.style.transition='width .3s ease'; setTimeout(()=> i.style.transition=''; },400); });
+      });
+    });
+
+    el('invertBtn').addEventListener('click',()=>{
+      document.body.classList.toggle('invert');
+      const inv = document.body.classList.contains('invert');
+      document.documentElement.style.setProperty('--bg', inv ? '#f7f7f7' : '#0a0a0a');
+      document.documentElement.style.setProperty('--text', inv ? '#0a0a0a' : '#f5f5f5');
+      document.documentElement.style.setProperty('--panel', inv ? '#fafafa' : '#111');
+      document.documentElement.style.setProperty('--card', inv ? '#fff' : '#0e0e0e');
+      document.documentElement.style.setProperty('--line', inv ? '#e5e5e5' : '#1f1f1f');
+      document.querySelectorAll('.btn.primary').forEach(x=>{
+        if(inv){ x.style.background='#000'; x.style.color='#fff'; x.style.borderColor='#000'; }
+        else { x.style.background='#fff'; x.style.color='#000'; x.style.borderColor='#fff'; }
+      });
+    });
+
+    const style = document.createElement('style');
+    style.textContent = '@keyframes pulseW{0%{filter:brightness(1)}50%{filter:brightness(1.2)}100%{filter:brightness(1)}}';
+    document.head.appendChild(style);
+    document.getElementById('pulseToggle').addEventListener('click', (e)=>{
+      const on = e.target.classList.toggle('toggled');
+      document.querySelectorAll('.bar > i').forEach(i=> i.style.animation = on ? 'pulseW 1.6s infinite ease-in-out' : 'none');
+    });
+
+    document.getElementById('bwToggle').addEventListener('click',(e)=>{
+      const on = e.target.classList.toggle('toggled');
+      document.querySelectorAll('.bar > i').forEach(i=> i.style.background = on ? '#fff' : 'linear-gradient(90deg,#fff,#7a7a7a)');
+    });
+
+    document.querySelectorAll('[data-campaign-card]').forEach(c=>{
+      c.addEventListener('click',()=> c.classList.toggle('active'));
+      c.addEventListener('mouseenter',()=> c.style.background = '#121212');
+      c.addEventListener('mouseleave',()=> c.style.background = 'var(--card)');
+    });
+
+    refresh();
+  </script>
+</body>
+</html>

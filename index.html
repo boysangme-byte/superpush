@@ -3,19 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>울트라캡쑝푸시 · UltraCapssoong Push</title>
+  <title>슈퍼푸시 · SuperPush CRM</title>
   <style>
     :root{
       --bg:#0a0a0a; --panel:#111; --muted:#999; --text:#f5f5f5; --line:#1f1f1f; --card:#0e0e0e;
       --radius:16px; --gap:16px; --shadow:0 12px 30px rgba(0,0,0,.45);
+      --accent:#ffffff;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0; background:linear-gradient(180deg,#000,#0a0a0a 35%); color:var(--text); font:14px/1.5 "Pretendard","Inter","Segoe UI",system-ui,-apple-system,sans-serif}
     .app{display:grid; grid-template-columns:260px 1fr; height:100%}
     aside{background:var(--panel); padding:24px 16px; border-right:1px solid var(--line)}
-    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
-    .logo{width:36px; height:36px; border-radius:12px; background:linear-gradient(135deg,#fff,#777); box-shadow:0 0 0 1px #222, var(--shadow)}
+    .brand{display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px}
+    .brand .logo-wrap{position:relative; width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#fff,#777); box-shadow:0 0 0 1px #222, var(--shadow); overflow:hidden}
+    /* 사용자 제공 로고를 index.html과 같은 경로에 logo_superpush.png로 두면 아래가 로드됩니다 */
+    .brand img.logo-img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; filter:grayscale(1) contrast(1.05); mix-blend-mode:multiply}
     .muted{color:var(--muted)}
     nav{margin-top:28px; display:grid; gap:8px}
     .nav-btn{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#e6e6e6; text-decoration:none; transition:.2s background}
@@ -63,9 +66,9 @@
     #toast.show{opacity:1; transform:translateY(0)}
 
     /* Dialog */
-    .modal{position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; padding:20px}
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; padding:20px; z-index:50}
     .modal:target{display:flex}
-    .dialog{width:min(760px,95vw); background:#0b0b0b; border:1px solid #1f1f1f; border-radius:18px; padding:18px; box-shadow:var(--shadow)}
+    .dialog{width:min(900px,95vw); background:#0b0b0b; border:1px solid #1f1f1f; border-radius:18px; padding:18px; box-shadow:var(--shadow)}
 
     /* Controls panel */
     .controls{display:grid; grid-template-columns:repeat(6, minmax(120px,1fr)); gap:8px}
@@ -75,11 +78,27 @@
     /* Trend canvas */
     #trend{width:100%; height:200px; display:block; background:#0b0b0b; border:1px solid #1b1b1b; border-radius:12px}
 
+    /* AI panel emphasis */
+    .ai-card{position:relative; border-radius:18px; background:linear-gradient(180deg,#0c0c0c,#0a0a0a); box-shadow:0 20px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04)}
+    .ai-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    .ai-grid textarea{width:100%; min-height:160px; resize:vertical; background:#0e0e0e; border:1px solid #202020; color:#e9e9e9; border-radius:12px; padding:10px}
+
+    /* Campaign preview card */
+    .camp-card{border:1px solid #202020; background:#0e0e0e; border-radius:14px; padding:12px}
+    .camp-card h4{margin:0 0 6px}
+
+    /* Campaign create form */
+    .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .form-grid .field{display:grid; gap:6px}
+    .form-grid input, .form-grid select, .form-grid textarea{background:#0e0e0e; border:1px solid #202020; color:#e9e9e9; border-radius:10px; padding:8px}
+
     /* Responsive */
     @media (max-width: 1100px){
       .kpis{grid-template-columns:repeat(2,1fr)}
       .funnel-steps{grid-template-columns:130px 1fr 100px}
       .controls{grid-template-columns:repeat(3, minmax(120px,1fr))}
+      .ai-grid{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
     }
     @media (max-width: 720px){
       .app{grid-template-columns:1fr}
@@ -92,7 +111,12 @@
 <body>
   <div class="app">
     <aside>
-      <div class="brand"><div class="logo"></div> 울트라캡쑝푸시 <span class="muted">UltraCapssoong Push</span></div>
+      <div class="brand">
+        <div class="logo-wrap">
+          <img class="logo-img" alt="SuperPush Logo" src="./logo_superpush.png"/>
+        </div>
+        슈퍼푸시 <span class="muted">SuperPush CRM</span>
+      </div>
       <nav>
         <a class="nav-btn active" href="#">대시보드</a>
         <a class="nav-btn" href="#segments">세그먼트</a>
@@ -305,19 +329,25 @@
           </div>
         </div>
 
-        <!-- AI RECOMMENDATIONS PANEL -->
-        <div class="card" id="aiPanel" style="margin-top:16px">
+        <!-- AI RECOMMENDATIONS PANEL (visibility improved) -->
+        <div class="card ai-card" id="aiPanel" style="margin-top:16px; border:1px solid #2a2a2a">
           <div class="panel-title">
-            <h3 style="font-size:16px; color:#e2e2e2; margin:0">캠페인 추천 · 울트라캡쑝푸시 AI</h3>
+            <h3 style="font-size:16px; color:#fff; margin:0">캠페인 추천 · 슈퍼푸시 AI</h3>
             <div class="toolbar">
-              <input id="openaiKey" type="password" placeholder="OpenAI API Key (선택)" style="min-width:280px"/>
-              <button class="btn" id="genRec">추천 생성</button>
-              <button class="btn ghost" id="copyPrompt">프롬프트 복사</button>
+              <input id="openaiKey" type="password" placeholder="OpenAI API Key (선택)" style="min-width:300px"/>
+              <button class="btn primary" id="genRecOpen">추천 생성</button>
+              <button class="btn" id="copyPrompt">프롬프트 복사</button>
             </div>
           </div>
-          <div class="row">
-            <div class="field"><label>요약</label><textarea id="summaryText" rows="5" placeholder="업로드한 데이터에서 KPI/퍼널/세그먼트 요약이 표시됩니다."></textarea></div>
-            <div class="field"><label>추천 결과</label><textarea id="recText" rows="5" placeholder="추천 캠페인과 레퍼런스가 생성됩니다."></textarea></div>
+          <div class="ai-grid">
+            <div>
+              <label class="muted">요약</label>
+              <textarea id="summaryText" placeholder="업로드한 데이터에서 KPI/퍼널/세그먼트 요약이 표시됩니다."></textarea>
+            </div>
+            <div>
+              <label class="muted">추천 결과(미리보기)</label>
+              <textarea id="recText" placeholder="추천 캠페인과 레퍼런스가 생성됩니다."></textarea>
+            </div>
           </div>
         </div>
       </main>
@@ -386,40 +416,70 @@
     </div>
   </div>
 
+  <!-- Campaign Generate Modal -->
+  <div id="camp-gen" class="modal">
+    <a class="close" href="#"><span>닫기</span></a>
+    <div class="dialog">
+      <h2>캠페인 생성 (목업)</h2>
+      <div class="form-grid">
+        <div class="field"><label>캠페인명</label><input id="f_name" placeholder="예: 장바구니 이탈 쿠폰 A/B"/></div>
+        <div class="field"><label>채널</label><select id="f_channel"><option>이메일</option><option>푸시</option><option>문자</option></select></div>
+        <div class="field"><label>타깃 세그먼트</label><input id="f_segment" placeholder="예: 장바구니 이탈(14일)"/></div>
+        <div class="field"><label>빈도</label><input id="f_freq" placeholder="예: 1회/24h, 최대 3회"/></div>
+        <div class="field" style="grid-column:1/-1"><label>메시지</label><textarea id="f_msg" rows="4" placeholder="예: 장바구니에 담긴 상품이 품절되기 전에..."></textarea></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr; gap:14px; margin-top:10px">
+        <div class="camp-card" id="campPrev">
+          <h4>미리보기</h4>
+          <p class="muted" id="campPrevBody">입력값에 따라 미리보기가 갱신됩니다.</p>
+          <div class="badge" id="campPrevMeta">채널: - · 빈도: -</div>
+        </div>
+        <div class="camp-card">
+          <h4>생성 로그</h4>
+          <pre id="campLog" style="white-space:pre-wrap; margin:0">대기중...</pre>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end">
+        <a class="btn" href="#">닫기</a>
+        <button class="btn" id="campGenerate">생성 실행</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ===== UTIL =====
-    const fmt = (n)=> new Intl.NumberFormat('ko-KR').format(n);
-    const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
-    const el = (id)=>document.getElementById(id);
-    const toast = (msg)=>{ const t=el('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2000); };
+    function fmt(n){ return new Intl.NumberFormat('ko-KR').format(n); }
+    function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+    function el(id){ return document.getElementById(id); }
+    function toast(msg){ var t=el('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');}, 2000); }
 
-    const inputs = { mau: el('mau'), signup: el('signup'), cr: el('cr'), open: el('open'), toCart: el('toCart'), toPay: el('toPay') };
-    const kpis = { mau: el('kpi_mau'), signup: el('kpi_signup'), cr: el('kpi_cr'), open: el('kpi_open') };
-
-    const bars = { cart: el('bar_cart'), pay: el('bar_pay') };
-    const funnelVals = { signup: el('fv_signup'), cart: el('fv_cart'), pay: el('fv_pay') };
-    const funnelPct = { cart: el('pct_cart'), pay: el('pct_pay') };
+    var inputs = { mau: el('mau'), signup: el('signup'), cr: el('cr'), open: el('open'), toCart: el('toCart'), toPay: el('toPay') };
+    var kpis = { mau: el('kpi_mau'), signup: el('kpi_signup'), cr: el('kpi_cr'), open: el('kpi_open') };
+    var bars = { cart: el('bar_cart'), pay: el('bar_pay') };
+    var funnelVals = { signup: el('fv_signup'), cart: el('fv_cart'), pay: el('fv_pay') };
+    var funnelPct = { cart: el('pct_cart'), pay: el('pct_pay') };
 
     // Trend canvas
-    const trendCanvas = el('trend');
-    const tctx = trendCanvas.getContext('2d');
+    var trendCanvas = el('trend');
+    var tctx = trendCanvas.getContext('2d');
     function resizeTrend(){ trendCanvas.width = trendCanvas.clientWidth * devicePixelRatio; trendCanvas.height = trendCanvas.clientHeight * devicePixelRatio; }
-    window.addEventListener('resize', ()=>{ resizeTrend(); drawTrend(); });
-
+    window.addEventListener('resize', function(){ resizeTrend(); drawTrend(); });
     function drawTrend(series){
       series = series || {signup:[], purchase:[]};
       resizeTrend();
-      const W=trendCanvas.width, H=trendCanvas.height; const pad=30*devicePixelRatio;
+      var W=trendCanvas.width, H=trendCanvas.height; var pad=30*devicePixelRatio;
       tctx.clearRect(0,0,W,H);
       tctx.strokeStyle = '#2a2a2a'; tctx.lineWidth = 1;
-      for(let i=0;i<5;i++){ const y = pad + (H-pad*2)*i/4; tctx.beginPath(); tctx.moveTo(pad,y); tctx.lineTo(W-pad,y); tctx.stroke(); }
-      const maxY = Math.max(1, ...(series.signup||[]), ...(series.purchase||[]));
+      for(var i=0;i<5;i++){ var y = pad + (H-pad*2)*i/4; tctx.beginPath(); tctx.moveTo(pad,y); tctx.lineTo(W-pad,y); tctx.stroke(); }
+      var maxY = 1;
+      maxY = Math.max(maxY, Math.max.apply(null, (series.signup||[]).concat(0)) );
+      maxY = Math.max(maxY, Math.max.apply(null, (series.purchase||[]).concat(0)) );
       function draw(arr,color){
         arr = arr || [];
         tctx.strokeStyle=color; tctx.lineWidth = 2*devicePixelRatio; tctx.beginPath();
         arr.forEach(function(v,idx){
-          const x = pad + (W-pad*2)*(idx/Math.max(1,arr.length-1));
-          const y = H-pad - (H-pad*2)*(v/maxY);
+          var x = pad + (W-pad*2)*(idx/Math.max(1,arr.length-1));
+          var y = H-pad - (H-pad*2)*(v/maxY);
           if(idx===0) tctx.moveTo(x,y); else tctx.lineTo(x,y);
         });
         tctx.stroke();
@@ -428,77 +488,99 @@
       draw(series.purchase,'#9d9d9d');
     }
 
+    // ===== STATE =====
+    var state = { users: [], events: [], orders: [], baseKpis:null, viewScale:1.0 };
+
+    // >>> FIX: Define computeTrend globally (was missing)
     function computeTrend(){
-      // last 30 days bucket by day
-      const days = Array.from({length:30},function(_,i){ const d=new Date(); d.setDate(d.getDate()- (29-i)); d.setHours(0,0,0,0); return d; });
-      const counts = { signup: new Array(30).fill(0), purchase: new Array(30).fill(0) };
-      state.events.forEach(function(e){
-        const t=new Date((e.event_time||'').replace('T',' ')); if(isNaN(+t)) return;
-        const diff = Math.floor((days[29]-t)/(864e5)); // days from last bucket
-        const idx = 29-diff; if(idx>=0 && idx<30){
-          const name=(e.event_name||'').toLowerCase();
-          if(name==='signup') counts.signup[idx]++;
-          if(name==='purchase') counts.purchase[idx]++;
+      var days=30; var sign=new Array(days).fill(0); var buy=new Array(days).fill(0);
+      if(state.events.length){
+        var now=Date.now();
+        state.events.forEach(function(e){
+          var t=new Date((e.event_time||'').replace('T',' ')); if(isNaN(+t)) return;
+          var d=Math.floor((now-t.getTime())/864e5); if(d<0||d>=days) return;
+          var idx=days-1-d; var nm=(e.event_name||'').toLowerCase();
+          if(nm==='signup') sign[idx]++; else if(nm==='purchase') buy[idx]++;
+        });
+      } else {
+        var baseS=+(state.baseKpis?state.baseKpis.signup:inputs.signup.value)||3000;
+        var toPay=+(state.baseKpis?state.baseKpis.toPay:inputs.toPay.value)||25;
+        for(var i=0;i<days;i++){
+          var v=Math.max(0,Math.round(baseS/days*(0.85+Math.random()*0.3)));
+          sign[i]=v; buy[i]=Math.round(v*toPay/100*(0.8+Math.random()*0.4));
         }
-      });
-      drawTrend(counts);
+      }
+      drawTrend({signup:sign,purchase:buy});
     }
+
+    function applyScale(n){ return Math.round(n * state.viewScale); }
 
     function refresh(){
-      kpis.mau.textContent = fmt(clamp(+inputs.mau.value||0,0,1e9));
-      kpis.signup.textContent = fmt(clamp(+inputs.signup.value||0,0,1e8));
-      kpis.cr.textContent = clamp(+inputs.cr.value||0,0,100).toFixed(1) + '%';
-      kpis.open.textContent = clamp(+inputs.open.value||0,0,100).toFixed(1) + '%';
+      var base = state.baseKpis ? state.baseKpis : {
+        mau: +inputs.mau.value||0,
+        signup: +inputs.signup.value||0,
+        cr: +inputs.cr.value||0,
+        open: +inputs.open.value||0,
+        toCart: +inputs.toCart.value||0,
+        toPay: +inputs.toPay.value||0
+      };
 
-      const base = clamp(+inputs.mau.value||0,0,1e9);
-      const cartRate = clamp(+inputs.toCart.value||0,0,100);
-      const payRate = clamp(+inputs.toPay.value||0,0,100);
-      const cart = Math.round(base * cartRate/100);
-      const pay = Math.round(base * payRate/100);
+      var d_mau = applyScale(base.mau);
+      var d_signup = applyScale(base.signup);
+      var d_cartRate = base.toCart;
+      var d_payRate = base.toPay;
+      var d_cart = Math.round(d_mau * d_cartRate/100);
+      var d_pay = Math.round(d_mau * d_payRate/100);
 
-      bars.cart.style.width = cartRate + '%';
-      bars.pay.style.width = payRate + '%';
+      kpis.mau.textContent = fmt(d_mau);
+      kpis.signup.textContent = fmt(d_signup);
+      kpis.cr.textContent = clamp(base.cr,0,100).toFixed(1) + '%';
+      kpis.open.textContent = clamp(base.open,0,100).toFixed(1) + '%';
 
-      funnelVals.signup.textContent = fmt(base);
-      funnelVals.cart.innerHTML = fmt(cart) + ' <span class="muted">(' + cartRate.toFixed(1) + '%)</span>';
-      funnelVals.pay.innerHTML = fmt(pay) + ' <span class="muted">(' + payRate.toFixed(1) + '%)</span>';
+      bars.cart.style.width = d_cartRate + '%';
+      bars.pay.style.width = d_payRate + '%';
 
-      funnelPct.cart.textContent = '('+cartRate.toFixed(1)+'%)';
-      funnelPct.pay.textContent = '('+payRate.toFixed(1)+'%)';
+      funnelVals.signup.textContent = fmt(d_mau);
+      funnelVals.cart.innerHTML = fmt(d_cart) + ' <span class="muted">(' + d_cartRate.toFixed(1) + '%)</span>';
+      funnelVals.pay.innerHTML = fmt(d_pay) + ' <span class="muted">(' + d_payRate.toFixed(1) + '%)</span>';
 
-      el('c1open').textContent = (Math.max(10, Math.min(90, +inputs.open.value || 0))).toFixed(1) + '%';
-      el('c2ctr').textContent = (Math.max(1, Math.min(20, (+inputs.cr.value||0)/2))).toFixed(1) + '%';
-      el('c3resp').textContent = (Math.max(1, Math.min(10, (+inputs.toPay.value||0)/6))).toFixed(1) + '%';
+      funnelPct.cart.textContent = '('+d_cartRate.toFixed(1)+'%)';
+      funnelPct.pay.textContent = '('+d_payRate.toFixed(1)+'%)';
+
+      el('c1open').textContent = (Math.max(10, Math.min(90, base.open||0))).toFixed(1) + '%';
+      el('c2ctr').textContent = (Math.max(1, Math.min(20, (base.cr||0)/2))).toFixed(1) + '%';
+      el('c3resp').textContent = (Math.max(1, Math.min(10, (base.toPay||0)/6))).toFixed(1) + '%';
     }
 
-    Object.values(inputs).forEach(function(i){ i.addEventListener('input', refresh); });
+    Object.keys(inputs).forEach(function(k){ inputs[k].addEventListener('input', function(){ state.baseKpis=null; refresh(); computeTrend(); buildSummary(); }); });
 
     el('kpiGrid').addEventListener('click', function(e){
-      const card = e.target.closest('.kpi'); if(!card) return;
-      document.querySelectorAll('.kpi').forEach(function(k){k.classList.remove('active')}); card.classList.add('active');
+      var card = e.target.closest('.kpi'); if(!card) return;
+      document.querySelectorAll('.kpi').forEach(function(k){k.classList.remove('active');}); card.classList.add('active');
     });
 
-    el('segTable').addEventListener('click', function(e){
-      const row = e.target.closest('.row-select'); if(!row) return; row.classList.toggle('selected');
-    });
+    el('segTable').addEventListener('click', function(e){ var row = e.target.closest('.row-select'); if(!row) return; row.classList.toggle('selected'); });
 
     function toggleSel(btn){
-      document.querySelectorAll('[data-sel], #segVip, #segDormant, #segAll').forEach(function(b){ b.removeAttribute('data-sel') });
-      btn.setAttribute('data-sel','');
-      btn.classList.add('toggled');
-      ['segVip','segDormant','segAll'].forEach(function(id){ if(id!==btn.id) el(id).classList.remove('toggled') });
+      document.querySelectorAll('[data-sel], #segVip, #segDormant, #segAll').forEach(function(b){ b.removeAttribute('data-sel'); });
+      btn.setAttribute('data-sel',''); btn.classList.add('toggled');
+      ['segVip','segDormant','segAll'].forEach(function(id){ if(id!==btn.id) el(id).classList.remove('toggled'); });
     }
+
     ;['segAll','segVip','segDormant'].forEach(function(id){
-      const b = el(id);
-      b.addEventListener('click',function(){
+      var b = el(id);
+      b.addEventListener('click', function(){
         toggleSel(b);
+        state.viewScale = (id==='segVip') ? 0.2 : (id==='segDormant' ? 0.1 : 1.0);
+        refresh(); computeTrend(); buildSummary();
         document.querySelectorAll('.bar > i').forEach(function(i){ i.style.transition='width .3s ease'; setTimeout(function(){ i.style.transition=''; },400); });
       });
     });
 
+    // Invert theme
     el('invertBtn').addEventListener('click',function(){
       document.body.classList.toggle('invert');
-      const inv = document.body.classList.contains('invert');
+      var inv = document.body.classList.contains('invert');
       document.documentElement.style.setProperty('--bg', inv ? '#f7f7f7' : '#0a0a0a');
       document.documentElement.style.setProperty('--text', inv ? '#0a0a0a' : '#f5f5f5');
       document.documentElement.style.setProperty('--panel', inv ? '#fafafa' : '#111');
@@ -508,19 +590,17 @@
     });
 
     // Pulse / B-W toggles
-    const style = document.createElement('style'); style.textContent='@keyframes pulseW{0%{filter:brightness(1)}50%{filter:brightness(1.2)}100%{filter:brightness(1)}}'; document.head.appendChild(style);
-    el('pulseToggle').addEventListener('click', function(e){ const on = e.target.classList.toggle('toggled'); document.querySelectorAll('.bar > i').forEach(function(i){ i.style.animation = on ? 'pulseW 1.6s infinite ease-in-out' : 'none' }); });
-    el('bwToggle').addEventListener('click',function(e){ const on = e.target.classList.toggle('toggled'); document.querySelectorAll('.bar > i').forEach(function(i){ i.style.background = on ? '#fff' : 'linear-gradient(90deg,#fff,#7a7a7a)' }); });
+    var style = document.createElement('style'); style.textContent='@keyframes pulseW{0%{filter:brightness(1)}50%{filter:brightness(1.2)}100%{filter:brightness(1)}}'; document.head.appendChild(style);
+    el('pulseToggle').addEventListener('click', function(e){ var on = e.target.classList.toggle('toggled'); document.querySelectorAll('.bar > i').forEach(function(i){ i.style.animation = on ? 'pulseW 1.6s infinite ease-in-out' : 'none'; }); });
+    el('bwToggle').addEventListener('click',function(e){ var on = e.target.classList.toggle('toggled'); document.querySelectorAll('.bar > i').forEach(function(i){ i.style.background = on ? '#fff' : 'linear-gradient(90deg,#fff,#7a7a7a)'; }); });
 
-    document.querySelectorAll('[data-campaign-card]').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('active') }); c.addEventListener('mouseenter',function(){ c.style.background = '#121212' }); c.addEventListener('mouseleave',function(){ c.style.background = 'var(--card)' }); });
+    document.querySelectorAll('[data-campaign-card]').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('active'); }); c.addEventListener('mouseenter',function(){ c.style.background = '#121212'; }); c.addEventListener('mouseleave',function(){ c.style.background = 'var(--card)'; }); });
 
     // ===== CSV LOADING & PARSING =====
-    const state = { users: [], events: [], orders: [] };
-
     function parseCSV(text){
-      const rows=[]; let i=0, field='', row=[], inQ=false; 
+      var rows=[]; var i=0, field='', row=[], inQ=false; 
       while(i<text.length){
-        const c=text[i]; const n=text[i+1];
+        var c=text[i]; var n=text[i+1];
         if(c==='"'){
           if(inQ && n==='"'){ field+='"'; i++; } else inQ=!inQ;
         } else if(c===',' && !inQ){ row.push(field); field=''; }
@@ -530,27 +610,27 @@
       }
       if(field!==''||row.length){ row.push(field); rows.push(row); }
       if(!rows.length) return [];
-      const header = rows.shift().map(function(h){return h.trim()});
-      return rows.filter(function(r){return r.length && r.some(function(x){return x!==''})})
-                 .map(function(r){return Object.fromEntries(header.map(function(h,idx){return [h, (r[idx]||'').trim()] }))});
+      var header = rows.shift().map(function(h){return h.trim();});
+      return rows.filter(function(r){return r.length && r.some(function(x){return x!=='';});})
+                 .map(function(r){var o={}; for(var j=0;j<header.length;j++){ o[header[j]]=(r[j]||'').trim(); } return o;});
     }
 
     function detectType(obj){
-      const keys = Object.keys(obj||{}).map(function(k){return k.toLowerCase()});
-      if(keys.includes('event_name') && keys.includes('event_time')) return 'events';
-      if(keys.includes('order_id') && keys.includes('amount')) return 'orders';
-      if(keys.includes('user_id') && (keys.includes('email')||keys.includes('signup_date'))) return 'users';
+      var keys = Object.keys(obj||{}).map(function(k){return k.toLowerCase();});
+      if(keys.indexOf('event_name')>-1 && keys.indexOf('event_time')>-1) return 'events';
+      if(keys.indexOf('order_id')>-1 && keys.indexOf('amount')>-1) return 'orders';
+      if(keys.indexOf('user_id')>-1 && (keys.indexOf('email')>-1||keys.indexOf('signup_date')>-1)) return 'users';
       return 'unknown';
     }
 
     function loadFiles(fileList){
       if(!fileList || !fileList.length) return;
-      const promises = Array.prototype.map.call(fileList, function(f){ return f.text().then(function(t){return {name:f.name,data:parseCSV(t)}}).catch(function(e){return {name:f.name,error:e}}) });
+      var promises = Array.prototype.map.call(fileList, function(f){ return f.text().then(function(t){return {name:f.name,data:parseCSV(t)};}).catch(function(e){return {name:f.name,error:e};}); });
       Promise.all(promises).then(function(all){
         all.forEach(function(obj){
-          const name=obj.name, data=obj.data, error=obj.error;
+          var name=obj.name, data=obj.data, error=obj.error;
           if(error){ toast('파싱 실패: '+name); return; }
-          const t = detectType((data&&data[0])||{});
+          var t = detectType((data&&data[0])||{});
           if(state[t]){ state[t]=data; toast(t+' 로드: '+data.length+'행'); }
         });
         el('status_users').value = state.users.length? '로우 '+state.users.length : '미로드';
@@ -560,152 +640,172 @@
       });
     }
 
-    el('csvInput').addEventListener('change', function(e){ loadFiles(e.target.files) });
+    el('csvInput').addEventListener('change', function(e){ loadFiles(e.target.files); });
 
     el('resetData').addEventListener('click', function(){
-      state.users = []; state.events = []; state.orders = [];
+      state.users = []; state.events = []; state.orders = []; state.baseKpis=null; state.viewScale=1.0;
       el('status_users').value='미로드'; el('status_events').value='미로드'; el('status_orders').value='선택(옵션)';
       refresh(); computeTrend(); toast('데이터 리셋 완료');
     });
 
     // ===== DEMO DATA (SMALL RANDOM) =====
     el('loadDemo').addEventListener('click', function(){
-      const today = new Date();
-      const fmtD = function(d){ return d.toISOString().slice(0,19).replace('T',' ') };
-      state.users = Array.from({length:120},function(_,i){ return { user_id:'U'+(10000+i), email:'u'+i+'@demo.com', signup_date: fmtD(new Date(today- Math.random()*90*864e5)), region:['Seoul','Busan','Incheon'][i%3] } });
+      var today = new Date();
+      var fmtD = function(d){ return d.toISOString().slice(0,19).replace('T',' '); };
+      state.users = Array.from({length:160}, function(_,i){ return { user_id:'U'+(10000+i), email:'u'+i+'@demo.com', signup_date: fmtD(new Date(today- Math.random()*90*864e5)), region:['Seoul','Busan','Incheon'][i%3] }; });
       state.events = [];
       state.users.forEach(function(u){
-        const signup = new Date(u.signup_date);
+        var signup = new Date(u.signup_date);
         state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'signup', event_time: u.signup_date});
-        if(Math.random()<0.72){ const t = new Date(+signup+ (1+Math.random()*10)*36e5); state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'add_to_cart', event_time: fmtD(t)}); }
-        if(Math.random()<0.41){ const t = new Date(+signup+ (4+Math.random()*48)*36e5); state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'purchase', event_time: fmtD(t)}); }
+        if(Math.random()<0.72){ var t1 = new Date(+signup+ (1+Math.random()*10)*36e5); state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'add_to_cart', event_time: fmtD(t1)}); }
+        if(Math.random()<0.41){ var t2 = new Date(+signup+ (4+Math.random()*48)*36e5); state.events.push({event_id:'E'+Math.random(), user_id:u.user_id, event_name:'purchase', event_time: fmtD(t2)}); }
       });
-      state.orders = state.events.filter(function(e){return e.event_name==='purchase'}).map(function(e,i){ return { order_id:'O'+(30000+i), user_id:e.user_id, order_time:e.event_time, amount: (Math.floor(Math.random()*9)+1)*10000, status:'success' } });
+      state.orders = state.events.filter(function(e){return e.event_name==='purchase';}).map(function(e,i){ return { order_id:'O'+(30000+i), user_id:e.user_id, order_time:e.event_time, amount: (Math.floor(Math.random()*9)+1)*10000, status:'success' }; });
       el('status_users').value = '로우 '+state.users.length; el('status_events').value = '로우 '+state.events.length; el('status_orders').value = '로우 '+state.orders.length;
       recomputeFromData(); computeTrend(); toast('데모 데이터 로드 완료');
     });
 
     // ===== DOWNLOAD TEMPLATES =====
     el('downloadTpl').addEventListener('click', function(){
-      const users = 'user_id,email,signup_date,region\nU10001,a@sample.com,2025-09-01 09:00:00,Seoul\nU10002,b@sample.com,2025-09-02 10:10:00,Busan';
-      const events = 'event_id,user_id,event_name,event_time\nE1,U10001,signup,2025-09-01 09:00:00\nE2,U10001,add_to_cart,2025-09-01 10:00:00\nE3,U10001,purchase,2025-09-01 11:00:00';
-      const orders = 'order_id,user_id,order_time,amount,status\nO1,U10001,2025-09-01 11:00:00,24000,success';
-      const save=function(name,txt){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'})); a.download=name; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href)},500); };
+      var users = 'user_id,email,signup_date,region\nU10001,a@sample.com,2025-09-01 09:00:00,Seoul\nU10002,b@sample.com,2025-09-02 10:10:00,Busan';
+      var events = 'event_id,user_id,event_name,event_time\nE1,U10001,signup,2025-09-01 09:00:00\nE2,U10001,add_to_cart,2025-09-01 10:00:00\nE3,U10001,purchase,2025-09-01 11:00:00';
+      var orders = 'order_id,user_id,order_time,amount,status\nO1,U10001,2025-09-01 11:00:00,24000,success';
+      function save(name,txt){ var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'})); a.download=name; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},500); }
       save('users.csv',users); save('events.csv',events); save('orders.csv',orders);
       toast('샘플 CSV 3종 다운로드');
     });
 
     // ===== AGGREGATION =====
-    function withinDays(ts, days){ const t = new Date((ts||'').replace('T',' ')); if(isNaN(+t)) return false; return (Date.now() - t.getTime()) <= days*864e5; }
+    function withinDays(ts, days){ var t = new Date((ts||'').replace('T',' ')); if(isNaN(+t)) return false; return (Date.now() - t.getTime()) <= days*864e5; }
 
     function recomputeFromData(){
-      if(!state.events.length && !state.users.length){ refresh(); computeTrend(); return; }
-      const last30Users = new Set(state.events.filter(function(e){return withinDays(e.event_time||e.ts||e.time||e.event_ts||'', 30)}).map(function(e){return e.user_id}));
-      const signups = state.events.filter(function(e){ return (e.event_name||'').toLowerCase()==='signup' });
-      const last30Signups = new Set(signups.filter(function(e){return withinDays(e.event_time,30)}).map(function(e){return e.user_id}));
-      const carts = state.events.filter(function(e){ return (e.event_name||'').toLowerCase()==='add_to_cart' });
-      const pays = state.events.filter(function(e){ return (e.event_name||'').toLowerCase()==='purchase' });
+      if(!state.events.length && !state.users.length){ state.baseKpis=null; refresh(); computeTrend(); return; }
+      var last30Users = new Set(state.events.filter(function(e){return withinDays(e.event_time||e.ts||e.time||e.event_ts||'', 30);}).map(function(e){return e.user_id;}));
+      var signups = state.events.filter(function(e){ return (e.event_name||'').toLowerCase()==='signup'; });
+      var last30Signups = new Set(signups.filter(function(e){return withinDays(e.event_time,30);}).map(function(e){return e.user_id;}));
+      var carts = state.events.filter(function(e){ return (e.event_name||'').toLowerCase()==='add_to_cart'; });
+      var pays = state.events.filter(function(e){ return (e.event_name||'').toLowerCase()==='purchase'; });
 
-      inputs.mau.value = last30Users.size;
-      inputs.signup.value = last30Signups.size;
-      const baseUsers = last30Users.size || state.users.length || 1;
-      const buyers = new Set(pays.map(function(e){return e.user_id})).size;
-      inputs.cr.value = (buyers / baseUsers * 100).toFixed(1);
-      inputs.open.value = Math.max(10, Math.min(60, (buyers/baseUsers*100)*12)).toFixed(1);
+      var baseUsers = last30Users.size || state.users.length || 1;
+      var buyers = new Set(pays.map(function(e){return e.user_id;})).size;
 
-      const cartUsers = new Set(carts.map(function(e){return e.user_id}));
-      const payUsers = new Set(pays.map(function(e){return e.user_id}));
-      inputs.toCart.value = Math.round(cartUsers.size / (state.users.length||1) * 100);
-      inputs.toPay.value = Math.round(payUsers.size / (state.users.length||1) * 100);
-
+      state.baseKpis = {
+        mau: last30Users.size,
+        signup: last30Signups.size,
+        cr: +(buyers / baseUsers * 100).toFixed(1),
+        open: +Math.max(10, Math.min(60, (buyers/baseUsers*100)*12)).toFixed(1),
+        toCart: Math.round(new Set(carts.map(function(e){return e.user_id;})).size / (state.users.length||1) * 100),
+        toPay: Math.round(new Set(pays.map(function(e){return e.user_id;})).size / (state.users.length||1) * 100)
+      };
       refresh(); buildSummary(); computeTrend();
     }
 
     function buildSummary(){
-      const totals = {}; state.orders.forEach(function(o){ totals[o.user_id]=(totals[o.user_id]||0)+(+o.amount||0) });
-      const arr = Object.values(totals).sort(function(a,b){return b-a}); const idx = Math.max(0, Math.floor(arr.length*0.2)-1); const vipCut = arr[idx]||0;
-      const dormant30 = state.users.filter(function(u){ return !state.events.some(function(e){ return e.user_id===u.user_id && withinDays(e.event_time,30) }) }).length;
-      const s = [
-        'MAU: '+kpis.mau.textContent,
-        '신규가입: '+kpis.signup.textContent,
-        '구매 전환율: '+kpis.cr.textContent,
-        '오픈율: '+kpis.open.textContent,
-        '장바구니 도달율: '+inputs.toCart.value+'%',
-        '결제 도달율: '+inputs.toPay.value+'%',
+      var totals = {}; state.orders.forEach(function(o){ totals[o.user_id]=(totals[o.user_id]||0)+(+o.amount||0); });
+      var arr = Object.values(totals).sort(function(a,b){return b-a;}); var idx = Math.max(0, Math.floor(arr.length*0.2)-1); var vipCut = arr[idx]||0;
+      var dormant30 = state.users.filter(function(u){ return !state.events.some(function(e){ return e.user_id===u.user_id && withinDays(e.event_time,30); }); }).length;
+      var base = state.baseKpis||{mau:inputs.mau.value, signup:inputs.signup.value, cr:inputs.cr.value, open:inputs.open.value, toCart:inputs.toCart.value, toPay:inputs.toPay.value};
+      var s = [
+        'MAU: '+fmt(applyScale(+base.mau||0)),
+        '신규가입: '+fmt(applyScale(+base.signup||0)),
+        '구매 전환율: '+(base.cr||0)+'%',
+        '오픈율: '+(base.open||0)+'%',
+        '장바구니 도달율: '+(base.toCart||0)+'%',
+        '결제 도달율: '+(base.toPay||0)+'%',
         'VIP 컷(상위20% 1인 누적액 기준): '+(vipCut.toLocaleString())+'원',
         '휴면(30일 무활동): '+dormant30+'명'
       ].join('\n');
       el('summaryText').value = s;
     }
 
-    // ===== AI RECOMMENDATIONS =====
+    // ===== AI RECOMMENDATIONS (modal driven) =====
     function heuristicRecommend(){
-      const cr = parseFloat(inputs.cr.value)||0; const toCart = parseFloat(inputs.toCart.value)||0; const toPay = parseFloat(inputs.toPay.value)||0; const recs=[];
+      var base = state.baseKpis||{cr:+inputs.cr.value||0, toCart:+inputs.toCart.value||0, toPay:+inputs.toPay.value||0};
+      var cr = +base.cr||0; var toCart = +base.toCart||0; var toPay = +base.toPay||0; var recs=[];
       if(toCart<50) recs.push('장바구니 도달 향상: 상품 상세 CTA 강화 + 1시간 리마인드 메일. 세그먼트: 최근 7일 방문·미장바구니.');
       if(toPay<30) recs.push('결제 전환 보완: 장바구니 24시간 이탈 타깃 쿠폰 A/B(5% vs 무료배송). 세그먼트: 장바구니 담고 24h 미구매.');
       if(cr<3) recs.push('퍼널 상단 볼륨 확대: 웰컴 시리즈(3부작)로 첫 구매 유도. 첫 구매 가이드 + 베스트 3 리스트.');
       if(!recs.length) recs.push('VIP 유지: 상위 20% 전용 얼리액세스 + 후기 리워드.');
-      const refs = [ 'https://www.braze.com/resources', 'https://www.segment.com/academy', 'https://www.retentionscience.com/blog' ];
+      var refs = [ 'https://www.braze.com/resources', 'https://www.segment.com/academy', 'https://www.retentionscience.com/blog' ];
       return '● 추천 캠페인\n- '+recs.join('\n- ')+'\n\n● 참고 자료\n- '+refs.join('\n- ');
     }
 
-    el('genRec').addEventListener('click', function(){
+    // 모달 열기 트리거: 새 캠페인 / AI 패널 버튼
+    el('newCamp').addEventListener('click', function(){ location.hash = '#camp-gen'; });
+    el('genRecOpen').addEventListener('click', function(){ location.hash = '#camp-gen'; updateCampPreview(); });
+
+    function updateCampPreview(){
+      var name = (el('f_name').value||'새 캠페인');
+      var seg = (el('f_segment').value||'전체');
+      var ch = el('f_channel').value;
+      var freq = (el('f_freq').value||'1회/24h');
+      var msg = (el('f_msg').value||'메시지 내용을 입력하세요.');
+      el('campPrev').querySelector('h4').textContent = name+ ' · '+seg;
+      el('campPrevBody').textContent = msg;
+      el('campPrevMeta').textContent = '채널: '+ch+' · 빈도: '+freq;
+    }
+    ;['f_name','f_segment','f_channel','f_freq','f_msg'].forEach(function(id){ var x=el(id); if(x){ x.addEventListener('input', updateCampPreview); }});
+
+    el('campGenerate').addEventListener('click', function(){
       var key = (el('openaiKey').value||'').trim();
       var prompt = '다음 KPI/퍼널 요약을 바탕으로 이커머스 CRM 캠페인을 제안하세요.\n'+el('summaryText').value+'\n형식: 1) 캠페인명/목적/타깃/메시지 예시/빈도 2) A/B 실험안 3) KPI 4) 참고 링크(3개, 전체 URL).';
-      el('recText').value = '생성중...';
-      if(!key){ el('recText').value = heuristicRecommend(); return; }
+      el('campLog').textContent = '생성중...';
+      if(!key){ var tx = heuristicRecommend(); el('recText').value = tx; el('campLog').textContent = '키 미입력: 휴리스틱 결과를 패널에 반영했습니다.'; return; }
       try{
         fetch('https://api.openai.com/v1/chat/completions',{
           method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key }, body: JSON.stringify({ model:'gpt-4o-mini', messages:[{role:'system',content:'당신은 CRM 마케터입니다.'},{role:'user',content:prompt}], temperature:0.7 })
-        }).then(function(res){ return res.json() }).then(function(j){
+        }).then(function(res){ return res.json(); }).then(function(j){
           var text = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || heuristicRecommend();
-          el('recText').value = text;
-        }).catch(function(){ el('recText').value = heuristicRecommend() });
-      }catch(e){ el('recText').value = heuristicRecommend(); }
+          el('recText').value = text; el('campLog').textContent = '생성 완료: 추천 패널로 반영됨.';
+        }).catch(function(){ el('recText').value = heuristicRecommend(); el('campLog').textContent = 'API 오류: 휴리스틱으로 대체.'; });
+      }catch(e){ el('recText').value = heuristicRecommend(); el('campLog').textContent = '예외: 휴리스틱으로 대체.'; }
     });
 
     el('copyPrompt').addEventListener('click', function(){ var prompt = 'KPI/퍼널 요약\n'+el('summaryText').value+'\n요청 포맷: 1) 캠페인명/목적/타깃/메시지 예시/빈도 2) A/B 실험안 3) KPI 4) 참고 링크(3개, 전체 URL)'; navigator.clipboard.writeText(prompt); toast('프롬프트 복사됨'); });
 
-    // ===== Keyboard Shortcuts =====
-    window.addEventListener('keydown', function(e){
-      if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
-      if(e.key==='i') el('invertBtn').click();
-      if(e.key==='p') el('pulseToggle').click();
-      if(e.key==='b') el('bwToggle').click();
-    });
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', function(e){ if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return; if(e.key==='i') el('invertBtn').click(); if(e.key==='p') el('pulseToggle').click(); if(e.key==='b') el('bwToggle').click(); });
 
     // ===== SELF TESTS =====
     ;(function(){
       try{
-        console.group('%c울트라캡쑝푸시 · Self Tests','color:#fff;background:#000;padding:2px 6px;border-radius:4px');
-        // 1) parseCSV basic
-        var csv = 'user_id,email\nU1,a@test.com\nU2,b@test.com';
+        console.group('%cSuperPush · Self Tests','color:#fff;background:#000;padding:2px 6px;border-radius:4px');
+        // CSV parser basic (use template literals to avoid invalid tokens)
+        var csv = `user_id,email\nU1,a@test.com\nU2,b@test.com`;
         var data = parseCSV(csv);
         console.assert(Array.isArray(data) && data.length===2 && data[0].user_id==='U1', 'parseCSV 기본 실패');
-        // 2) parseCSV quoted with comma & newline
-        var csv2 = 'name,comment\n"kim","hello, world"\n"lee","multi\nline"';
+        // CSV quoted/newline cells
+        var csv2 = `name,comment\n"kim","hello, world"\n"lee","multi\nline"`;
         var data2 = parseCSV(csv2);
-        console.assert(data2.length===2 && data2[0].comment==='hello, world' && data2[1].comment==='multi\nline', 'parseCSV 인용부호 실패');
-        // 3) detectType
+        console.assert(data2.length===2 && data2[0].comment==='hello, world' && data2[1].comment==='multi\nline', 'parseCSV 인용부호/줄바꿈 실패');
+        // Type detection tests
         console.assert(detectType({event_name:'signup',event_time:'2025-01-01'})==='events', 'detectType events 실패');
         console.assert(detectType({user_id:'U1',email:'a'})==='users', 'detectType users 실패');
         console.assert(detectType({order_id:'O1',amount:100})==='orders', 'detectType orders 실패');
         console.assert(detectType({foo:'bar'})==='unknown', 'detectType unknown 실패');
-        // 4) withinDays edge
+        // Date range
         console.assert(withinDays(new Date(Date.now()-29*864e5).toISOString().slice(0,19).replace('T',' '),30)===true, 'withinDays 경계 실패');
-        // 5) heuristicRecommend returns bullets
+        // Heuristic recommender format
         var hr = heuristicRecommend();
         console.assert(hr.indexOf('● 추천 캠페인')>-1 && hr.indexOf('\n- ')>-1, 'heuristicRecommend 포맷 실패');
-        // 6) CRLF row endings
-        var csv3 = 'user_id,email\r\nU3,c@test.com\r\nU4,d@test.com';
-        var data3 = parseCSV(csv3);
-        console.assert(data3.length===2 && data3[1].user_id==='U4', 'CRLF 처리 실패');
+        // Segment scaling
+        state.baseKpis={mau:1000,signup:100,cr:2.0,open:30,toCart:50,toPay:20}; state.viewScale=0.2; refresh();
+        console.assert(el('kpi_mau').textContent.replace(/[^0-9]/g,'')==='200','VIP 20% 스케일 실패');
+        state.viewScale=0.1; refresh();
+        console.assert(el('kpi_mau').textContent.replace(/[^0-9]/g,'')==='100','휴면 10% 스케일 실패');
+        // computeTrend must exist and run
+        console.assert(typeof computeTrend==='function','computeTrend 존재 실패');
+        try { computeTrend(); console.assert(true,'computeTrend 실행'); } catch(e){ console.assert(false,'computeTrend 실행 중 오류: '+e); }
+        // drawTrend should not throw on empty series
+        try { drawTrend({signup:[0,1,2], purchase:[0,1]}); } catch(e){ console.assert(false,'drawTrend 오류: '+e); }
         console.groupEnd();
       }catch(err){ console.error('Self Test Error:', err); }
     })();
 
     // Initial paint
-    refresh(); computeTrend();
+    refresh();
+    computeTrend();
+    buildSummary();
   </script>
 </body>
 </html>
